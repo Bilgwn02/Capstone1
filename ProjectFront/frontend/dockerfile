@@ -1,0 +1,34 @@
+# FRONTEND/frontend_dep/Dockerfile
+
+# --- Stage 1: Build the React Application ---
+    FROM node:20-alpine AS build_stage
+
+    WORKDIR /app
+    
+    # Copy package.json and package-lock.json to leverage Docker cache
+    # These should be relative to the Dockerfile's location (which is now in frontend_dep)
+    COPY package.json ./
+    COPY package-lock.json ./
+    
+    # Install dependencies
+    RUN npm install
+    
+    # Copy the rest of your React application source code
+    COPY . .
+    
+    # Build the React application for production
+    # This command generates the 'build' folder
+    RUN npm run build
+    
+    # --- Stage 2: Serve the Built Application with Nginx ---
+    FROM nginx:alpine AS production_stage
+    
+    # Copy the built React app from the build_stage to Nginx's default public folder
+    # /usr/share/nginx/html is the default directory Nginx serves files from
+    COPY --from=build_stage /app/build /usr/share/nginx/html
+    
+    # Expose port 80, which Nginx listens on
+    EXPOSE 80
+    
+    # The default Nginx command will run, serving your static files
+    CMD ["nginx", "-g", "daemon off;"]
